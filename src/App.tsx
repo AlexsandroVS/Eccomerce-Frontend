@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
+import ChatbotContainer from './components/Landing/Chatbot';
 
 // Páginas públicas
 import HomePage from './pages/HomePage';
@@ -204,13 +205,15 @@ const AppRoutes = () => {
 
 const App = () => {
   return (
-    <Router>
-      <AuthProvider>
-        <CartProvider>
+    <AuthProvider>
+      <CartProvider>
+        <Router>
           <AppRoutes />
-        </CartProvider>
-      </AuthProvider>
-    </Router>
+          {/* Chatbot flotante global, solo para vistas cliente */}
+          {window.location.pathname.startsWith('/admin') ? null : <ChatbotContainer />}
+        </Router>
+      </CartProvider>
+    </AuthProvider>
   );
 };
 

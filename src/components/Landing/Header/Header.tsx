@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 interface HeaderProps {
   onCartClick: () => void;
-  onChatbotClick: () => void;
+  onChatbotClick?: () => void;
 }
 
 const Header = ({ onCartClick, onChatbotClick }: HeaderProps) => {

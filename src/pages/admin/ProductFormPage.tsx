@@ -527,11 +527,14 @@ const ProductFormPage = () => {
                 const newProduct = await createProduct(productData as ProductCreateData);
                 if (newProduct) {
                     addToast('Producto creado exitosamente', 'success');
-                    
                     // Subir imágenes si hay
                     if (formData.images.length > 0) {
                         await uploadImages(newProduct.id);
                     }
+                    // Refetch del producto para obtener imágenes actualizadas
+                    const productWithImages = await getProductById(newProduct.id);
+                    // Aquí puedes actualizar el estado, mostrar un resumen, o navegar
+                    // Por ahora, simplemente navegamos, pero podrías mostrar un modal/resumen
                 }
             }
 

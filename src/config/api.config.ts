@@ -42,6 +42,7 @@ export const API_CONFIG = {
       BY_ID: (id: string) => `/orders/${id}`,
       CREATE: '/orders',
       UPDATE: (id: string) => `/orders/${id}`,
+      LIST_MY: '/orders',
     },
     WISHLIST: {
       ALL: '/api/wishlist',

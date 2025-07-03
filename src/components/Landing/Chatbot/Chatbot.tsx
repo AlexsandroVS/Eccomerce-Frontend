@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { sendMessageToChatbot } from "../../../utils/chatbotApi";
+import ReactMarkdown from "react-markdown";
 
 interface Message {
   sender: "user" | "bot";
@@ -61,13 +62,14 @@ const Chatbot: React.FC<ChatbotProps> = ({ onClose }) => {
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
+        maxHeight: "70vh",
       }}
     >
       <div style={{ padding: "1rem", borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ fontWeight: 600 }}>Asistente</span>
         <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer" }}>×</button>
       </div>
-      <div style={{ flex: 1, padding: "1rem", overflowY: "auto", height: 300 }}>
+      <div style={{ flex: 1, padding: "1rem", overflowY: "auto", minHeight: 100, maxHeight: "45vh" }}>
         {messages.map((msg, idx) => (
           <div key={idx} style={{
             display: "flex",
@@ -81,8 +83,12 @@ const Chatbot: React.FC<ChatbotProps> = ({ onClose }) => {
               padding: "8px 14px",
               maxWidth: "80%",
               fontSize: 15,
+              wordBreak: "break-word",
+              whiteSpace: "pre-wrap",
             }}>
-              {msg.text}
+              {msg.sender === "bot"
+                ? <ReactMarkdown>{msg.text}</ReactMarkdown>
+                : msg.text}
             </div>
           </div>
         ))}

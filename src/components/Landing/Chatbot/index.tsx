@@ -6,7 +6,7 @@ const ChatbotContainer: React.FC = () => {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <ChatbotButton onClick={() => setOpen(true)} />
+      {!open && <ChatbotButton onClick={() => setOpen(true)} />}
       {open && <Chatbot onClose={() => setOpen(false)} />}
     </>
   );

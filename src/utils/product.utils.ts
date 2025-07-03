@@ -1,6 +1,6 @@
 // utils/product.utils.ts
 
-import type { Product, ProductType } from '../types/product.types';
+import type { Product, ProductType, ProductAttribute } from '../types/product.types';
 import { getImageUrl } from './image.utils';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/api$/, '') || 'http://localhost:3000';
@@ -46,9 +46,27 @@ export const productUtils = {
   },
 
   /**
-   * Obtiene todas las imágenes del producto ordenadas (principal primero)
+   * Obtiene todas las imágenes del producto ordenadas (principal primero) con URLs procesadas
    */
   getOrderedImages(product: Product) {
+    if (!product?.images || product.images.length === 0) {
+      return [];
+    }
+
+    return [...product.images].sort((a, b) => {
+      if (a.is_primary) return -1;
+      if (b.is_primary) return 1;
+      return 0;
+    }).map(image => ({
+      ...image,
+      url: getImageUrl(image.url)
+    }));
+  },
+
+  /**
+   * Obtiene todas las imágenes del producto como URLs simples
+   */
+  getOrderedImageUrls(product: Product): string[] {
     if (!product?.images || product.images.length === 0) {
       return [];
     }
@@ -133,6 +151,10 @@ export const productUtils = {
    * Formatea los atributos del producto
    */
   formatAttributes(product: Product): Record<string, string> {
+    if (!product.attributes || product.attributes.length === 0) {
+      return {};
+    }
+    
     return product.attributes.reduce((acc, attr) => {
       acc[attr.name] = attr.value;
       return acc;
@@ -142,8 +164,13 @@ export const productUtils = {
   /**
    * Convierte atributos de objeto a array
    */
-  attributesToArray(attributes: Record<string, string>) {
-    return Object.entries(attributes).map(([name, value]) => ({ name, value }));
+  attributesToArray(attributes: Record<string, string>): ProductAttribute[] {
+    return Object.entries(attributes).map(([name, value]) => ({ 
+      id: '', 
+      name, 
+      value, 
+      product_id: '' 
+    }));
   },
 
   /**
@@ -161,10 +188,10 @@ export const productUtils = {
       product.categories.some(cat => 
         cat.name.toLowerCase().includes(searchLower)
       ) ||
-      product.attributes.some(attr => 
+      (product.attributes && product.attributes.some(attr => 
         attr.name.toLowerCase().includes(searchLower) ||
         attr.value.toLowerCase().includes(searchLower)
-      )
+      ))
     );
   },
 
@@ -279,8 +306,8 @@ export const productUtils = {
     const active = products.filter(p => p.is_active && !p.deleted_at).length;
     const inactive = products.filter(p => !p.is_active && !p.deleted_at).length;
     const deleted = products.filter(p => p.deleted_at).length;
-    const withImages = products.filter(p => p.images.length > 0).length;
-    const withoutStock = products.filter(p => p.variants.length === 0 && p.type === 'VARIABLE').length;
+    const withImages = products.filter(p => p.images && p.images.length > 0).length;
+    const withoutStock = products.filter(p => p.variants && p.variants.length === 0 && p.type === 'VARIABLE').length;
 
     return {
       total,
@@ -302,5 +329,80 @@ export const productUtils = {
     
     const total = productsWithPrice.reduce((sum, p) => sum + (p.base_price || 0), 0);
     return total / productsWithPrice.length;
+  },
+
+  /**
+   * Obtiene el stock total de un producto (incluyendo variantes)
+   */
+  getTotalStock(product: Product): number {
+    if (product.type === 'VARIABLE' && product.variants && product.variants.length > 0) {
+      return product.variants
+        .filter(v => v.is_active)
+        .reduce((total, variant) => total + variant.stock, 0);
+    }
+    return product.stock || 0;
+  },
+
+  /**
+   * Obtiene el precio mínimo de un producto (para productos variables)
+   */
+  getMinPrice(product: Product): number {
+    if (product.type === 'VARIABLE' && product.variants && product.variants.length > 0) {
+      const activeVariants = product.variants.filter(v => v.is_active);
+      if (activeVariants.length > 0) {
+        return Math.min(...activeVariants.map(v => v.price));
+      }
+    }
+    return product.base_price || 0;
+  },
+
+  /**
+   * Obtiene el precio máximo de un producto (para productos variables)
+   */
+  getMaxPrice(product: Product): number {
+    if (product.type === 'VARIABLE' && product.variants && product.variants.length > 0) {
+      const activeVariants = product.variants.filter(v => v.is_active);
+      if (activeVariants.length > 0) {
+        return Math.max(...activeVariants.map(v => v.price));
+      }
+    }
+    return product.base_price || 0;
+  },
+
+  /**
+   * Verifica si un producto tiene stock disponible
+   */
+  hasStock(product: Product): boolean {
+    return this.getTotalStock(product) > 0;
+  },
+
+  /**
+   * Obtiene el estado del stock como texto
+   */
+  getStockStatusText(product: Product): string {
+    const totalStock = this.getTotalStock(product);
+    
+    if (totalStock > 10) {
+      return 'En stock';
+    } else if (totalStock > 0) {
+      return `Solo ${totalStock} disponibles`;
+    } else {
+      return 'Agotado';
+    }
+  },
+
+  /**
+   * Obtiene el color del estado del stock
+   */
+  getStockStatusColor(product: Product): string {
+    const totalStock = this.getTotalStock(product);
+    
+    if (totalStock > 10) {
+      return 'text-green-600';
+    } else if (totalStock > 0) {
+      return 'text-orange-600';
+    } else {
+      return 'text-red-600';
+    }
   },
 };

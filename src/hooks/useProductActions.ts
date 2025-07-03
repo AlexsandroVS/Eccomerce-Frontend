@@ -1,10 +1,12 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import type { Product } from '../types/product.types';
+import type { Product, ProductVariant } from '../types/product.types';
+import { useCart } from '../contexts/CartContext';
 
 export const useProductActions = () => {
   const navigate = useNavigate();
+  const { addToCart } = useCart();
 
   const navigateToProduct = useCallback((productId: string) => {
     navigate(`/products/${productId}`);
@@ -18,21 +20,17 @@ export const useProductActions = () => {
     navigate(`/products?category=${categoryId}`);
   }, [navigate]);
 
-  const addToCart = useCallback((product: Product, quantity: number = 1, variant?: any) => {
-    // TODO: Implementar lógica real del carrito
-    const cartItem = {
-      product,
-      variant,
-      quantity,
-      price: variant?.price || product.base_price || 0
-    };
-    
-    console.log('Añadir al carrito:', cartItem);
-    toast.success('Producto añadido al carrito');
-    
-    // Aquí podrías integrar con un contexto de carrito
-    // dispatch({ type: 'ADD_TO_CART', payload: cartItem });
-  }, []);
+  const addToCartAction = useCallback((product: Product, quantity: number = 1, variant?: ProductVariant) => {
+    try {
+      addToCart(product, quantity, variant);
+      
+      const variantText = variant ? ` (${variant.sku_suffix})` : '';
+      toast.success(`Producto añadido al carrito${variantText}`);
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      toast.error('Error al añadir al carrito');
+    }
+  }, [addToCart]);
 
   const addToWishlist = useCallback((product: Product) => {
     // TODO: Implementar lógica real de wishlist
@@ -88,7 +86,7 @@ export const useProductActions = () => {
     navigateToProduct,
     navigateToProducts,
     navigateToCategory,
-    addToCart,
+    addToCart: addToCartAction,
     addToWishlist,
     removeFromWishlist,
     toggleWishlist,

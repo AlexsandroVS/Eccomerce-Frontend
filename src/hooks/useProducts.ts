@@ -334,7 +334,7 @@ export const useProducts = (): UseProductsReturn => {
 
   const createProductVariant = useCallback(async (productId: string, data: ProductVariantCreateData) => {
     try {
-      const variant = await productService.createVariant(productId, data);
+      const variant = await productService.createVariant(data);
       setVariants(prev => ({
         ...prev,
         [productId]: [...(prev[productId] || []), variant]

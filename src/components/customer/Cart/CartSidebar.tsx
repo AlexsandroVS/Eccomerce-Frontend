@@ -8,6 +8,7 @@ import CheckoutForm from '../../payments/CheckoutForm';
 import { useAuth } from '../../../contexts/AuthContext';
 import { createOrder } from '../../../services/order.service';
 import { createPaymentIntent } from '../../../services/payment.service';
+import { getImageUrl } from '../../../utils/image.utils';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
 
@@ -186,9 +187,12 @@ const CartSidebar = ({ onClose }) => {
                     className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg"
                   >
                     <img
-                      src={item.image}
+                      src={getImageUrl(item.image || '')}
                       alt={item.name}
                       className="w-20 h-20 object-cover rounded"
+                      onError={(e) => {
+                        e.currentTarget.src = '/placeholder-product.jpg';
+                      }}
                     />
                     <div className="flex-1">
                       <h3 className="font-medium">{item.name}</h3>

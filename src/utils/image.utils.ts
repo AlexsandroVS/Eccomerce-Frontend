@@ -1,5 +1,5 @@
 // Usar la URL base sin /api para archivos estáticos
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/api$/, '') || 'http://localhost:3000';
 
 /**
  * Convierte una URL relativa de imagen en una URL absoluta

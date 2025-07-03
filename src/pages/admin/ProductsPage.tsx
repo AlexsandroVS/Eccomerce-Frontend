@@ -550,9 +550,7 @@ const ProductsPage = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {displayItems.map(item => {
                   const isVariant = item.isVariant;
-                  const primaryImage = isVariant 
-                    ? (item.images && item.images.length > 0 ? getImageUrl(item.images[0].url) : null)
-                    : productUtils.getPrimaryImage(item);
+                  const primaryImage = productUtils.getPrimaryImage(item);
                   const isActive = item.is_active && !item.deleted_at;
                   const hasVariants = !isVariant && item.variants && item.variants.length > 0;
                   

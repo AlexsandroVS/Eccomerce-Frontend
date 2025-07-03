@@ -13,10 +13,6 @@ interface ProductCardProps {
 const ProductCard = memo(({ product }: ProductCardProps) => {
   const { addToCart } = useCart();
   const primaryImageUrl = productUtils.getPrimaryImage(product);
-  const hasDiscount = product.compare_at_price && product.compare_at_price > product.base_price;
-  const discountPercentage = hasDiscount 
-    ? Math.round(((product.compare_at_price! - product.base_price!) / product.compare_at_price!) * 100)
-    : 0;
 
   // Determinar el estado del stock
   const getStockStatus = () => {
@@ -34,6 +30,14 @@ const ProductCard = memo(({ product }: ProductCardProps) => {
 
   const stockStatus = getStockStatus();
   const hasStock = typeof product.stock === 'number' ? product.stock > 0 : parseInt(product.stock as any) > 0;
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (hasStock) {
+      addToCart(product, 1);
+    }
+  };
 
   return (
     <motion.div
@@ -61,14 +65,9 @@ const ProductCard = memo(({ product }: ProductCardProps) => {
             </div>
           )}
           
-          {hasDiscount && (
-            <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-sm font-medium">
-              -{discountPercentage}%
-            </div>
-          )}
-          {product.is_featured && (
-            <div className="absolute top-2 left-2 bg-blue-500 text-white px-2 py-1 rounded-full text-sm font-medium">
-              Destacado
+          {product.sales_count > 50 && (
+            <div className="absolute top-2 right-2 bg-blue-500 text-white px-2 py-1 rounded-full text-sm font-medium">
+              Bestseller
             </div>
           )}
         </div>
@@ -92,23 +91,12 @@ const ProductCard = memo(({ product }: ProductCardProps) => {
           <div className="mt-4 flex items-center justify-between">
             <div>
               <span className="text-lg font-bold text-blue-600">
-                ${product.base_price.toFixed(2)}
+                {productUtils.formatPrice(product.base_price)}
               </span>
-              {hasDiscount && (
-                <span className="ml-2 text-sm text-gray-500 line-through">
-                  ${product.compare_at_price?.toFixed(2)}
-                </span>
-              )}
             </div>
             
             <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (hasStock) {
-                  addToCart(product, 1);
-                }
-              }}
+              onClick={handleAddToCart}
               disabled={!hasStock}
               className={`p-2 rounded-full ${
                 hasStock 

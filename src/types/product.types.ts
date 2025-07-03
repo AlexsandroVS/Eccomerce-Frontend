@@ -65,10 +65,6 @@ export interface Product {
   base_price: number;
   stock: number;
   type: ProductType;
-  attributes?: Record<string, any>;
-  categories: Category[];
-  images: ProductImage[];
-  variants?: ProductVariant[];
   is_active: boolean;
   deleted_at?: string | null;
   created_at: string;
@@ -102,8 +98,6 @@ export interface ProductUpdateData {
   description?: string;
   type?: ProductType;
   base_price?: number;
-  compare_at_price?: number;
-  is_featured?: boolean;
   attributes?: Record<string, string>;
   categories?: number[];
 }

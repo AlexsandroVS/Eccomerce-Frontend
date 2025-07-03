@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Product } from '../types/product.types';
+import type { Product, ProductVariant } from '../types/product.types';
 
 export interface CartItem {
   id: string;
@@ -8,20 +8,23 @@ export interface CartItem {
   image?: string;
   quantity: number;
   product: Product;
+  variant?: ProductVariant;
+  variantId?: string;
 }
 
 interface CartContextType {
   items: CartItem[];
-  addToCart: (product: Product, quantity?: number) => void;
+  addToCart: (product: Product, quantity?: number, variant?: ProductVariant) => void;
   removeFromCart: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
   total: number;
+  itemCount: number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-const CART_KEY = 'cart_items_v1';
+const CART_KEY = 'cart_items_v2';
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>(() => {
@@ -33,25 +36,44 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem(CART_KEY, JSON.stringify(items));
   }, [items]);
 
-  const addToCart = (product: Product, quantity: number = 1) => {
+  const addToCart = (product: Product, quantity: number = 1, variant?: ProductVariant) => {
     setItems(prev => {
-      const existing = prev.find(item => item.id === product.id);
+      // Crear un ID único que incluya la variante si existe
+      const itemId = variant ? `${product.id}-${variant.id}` : product.id;
+      
+      const existing = prev.find(item => item.id === itemId);
       if (existing) {
         return prev.map(item =>
-          item.id === product.id
+          item.id === itemId
             ? { ...item, quantity: item.quantity + quantity }
             : item
         );
       }
+      
+      // Determinar el precio y la imagen
+      const price = variant ? variant.price : (product.base_price || 0);
+      
+      // Obtener la imagen principal del producto o variante (URL original)
+      let image = '';
+      if (variant?.images && variant.images.length > 0) {
+        image = variant.images[0].url;
+      } else if (product.images && product.images.length > 0) {
+        // Buscar la imagen principal o usar la primera
+        const primaryImage = product.images.find(img => img.is_primary);
+        image = primaryImage ? primaryImage.url : product.images[0].url;
+      }
+      
       return [
         ...prev,
         {
-          id: product.id,
+          id: itemId,
           name: product.name,
-          price: product.base_price || 0,
-          image: product.images?.[0]?.url,
+          price,
+          image,
           quantity,
           product,
+          variant,
+          variantId: variant?.id,
         },
       ];
     });
@@ -72,9 +94,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const clearCart = () => setItems([]);
 
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQuantity, clearCart, total }}>
+    <CartContext.Provider value={{ 
+      items, 
+      addToCart, 
+      removeFromCart, 
+      updateQuantity, 
+      clearCart, 
+      total,
+      itemCount 
+    }}>
       {children}
     </CartContext.Provider>
   );

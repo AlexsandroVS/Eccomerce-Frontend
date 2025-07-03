@@ -20,9 +20,9 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { useCatalog } from '../../hooks/useCatalog';
-import { useProductActions } from '../../hooks/useProductActions';
 import { productService } from '../../services/product.service';
 import { productUtils } from '../../utils/product.utils';
+import { useCart } from '../../contexts/CartContext';
 import { toast } from 'sonner';
 import type { Product, ProductVariant } from '../../types/product.types';
 
@@ -30,13 +30,7 @@ const ProductDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { getProductById, loading, categories } = useCatalog();
-  const { 
-    navigateToProducts, 
-    navigateToCategory, 
-    addToCart, 
-    toggleWishlist, 
-    shareProduct 
-  } = useProductActions();
+  const { addToCart } = useCart();
   
   // Estados locales
   const [product, setProduct] = useState<Product | null>(null);
@@ -51,7 +45,7 @@ const ProductDetailPage: React.FC = () => {
   useEffect(() => {
     const loadProduct = async () => {
       if (!id) {
-        navigateToProducts();
+        navigate('/products');
         return;
       }
 
@@ -70,7 +64,7 @@ const ProductDetailPage: React.FC = () => {
           setProductNotFound(false);
           
           // Si es un producto variable, seleccionar la primera variante activa
-          if (foundProduct.type === 'VARIABLE' && foundProduct.variants.length > 0) {
+          if (foundProduct.type === 'VARIABLE' && foundProduct.variants && foundProduct.variants.length > 0) {
             const activeVariants = foundProduct.variants.filter(v => v.is_active);
             if (activeVariants.length > 0) {
               setSelectedVariant(activeVariants[0]);
@@ -80,7 +74,7 @@ const ProductDetailPage: React.FC = () => {
           setProductNotFound(true);
           toast.error('Producto no encontrado');
           setTimeout(() => {
-            navigateToProducts();
+            navigate('/products');
           }, 2000);
         }
       } catch (error: any) {
@@ -88,7 +82,7 @@ const ProductDetailPage: React.FC = () => {
         setProductNotFound(true);
         toast.error(error.message || 'Error al cargar el producto');
         setTimeout(() => {
-          navigateToProducts();
+          navigate('/products');
         }, 2000);
       } finally {
         setLoadingProduct(false);
@@ -96,19 +90,20 @@ const ProductDetailPage: React.FC = () => {
     };
 
     loadProduct();
-  }, [id, getProductById, navigateToProducts]);
+  }, [id, getProductById, navigate]);
 
   // Memoized calculations
   const availableImages = useMemo(() => {
     if (!product) return [];
     
-    // Obtener imágenes ordenadas del producto
+    // Obtener imágenes ordenadas del producto con URLs procesadas
     const productImages = productUtils.getOrderedImages(product);
     
     // Si hay una variante seleccionada y tiene imágenes, combinarlas
     if (selectedVariant?.images && selectedVariant.images.length > 0) {
       const variantImages = selectedVariant.images.map(img => ({
         ...img,
+        url: productUtils.buildImageUrl(img.url),
         product_id: product.id
       }));
       return [...variantImages, ...productImages];
@@ -183,25 +178,50 @@ const ProductDetailPage: React.FC = () => {
   const handleAddToCart = useCallback(() => {
     if (!product) return;
     
-    addToCart(product, quantity, selectedVariant);
+    addToCart(product, quantity, selectedVariant || undefined);
+    toast.success('Producto añadido al carrito');
   }, [product, quantity, selectedVariant, addToCart]);
 
   const handleToggleWishlist = useCallback(() => {
     if (!product) return;
     
-    toggleWishlist(product, isWishlisted);
     setIsWishlisted(!isWishlisted);
-  }, [product, isWishlisted, toggleWishlist]);
+    toast.success(isWishlisted ? 'Eliminado de favoritos' : 'Añadido a favoritos');
+  }, [product, isWishlisted]);
 
-  const handleShare = useCallback(() => {
+  const handleShare = useCallback(async () => {
     if (!product) return;
     
-    shareProduct(product);
-  }, [product, shareProduct]);
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: product.name,
+          text: product.description,
+          url: `${window.location.origin}/products/${product.id}`,
+        });
+      } catch (error) {
+        console.log('Error sharing:', error);
+      }
+    } else {
+      // Fallback: copiar URL al clipboard
+      try {
+        const url = `${window.location.origin}/products/${product.id}`;
+        await navigator.clipboard.writeText(url);
+        toast.success('URL copiada al portapapeles');
+      } catch (error) {
+        console.log('Error copying to clipboard:', error);
+        toast.error('Error al copiar URL');
+      }
+    }
+  }, [product]);
 
-  const handleNavigateToCategory = useCallback((categoryId: string) => {
-    navigateToCategory(categoryId);
-  }, [navigateToCategory]);
+  const navigateToProducts = useCallback(() => {
+    navigate('/products');
+  }, [navigate]);
+
+  const navigateToCategory = useCallback((categoryId: string) => {
+    navigate(`/products?category=${categoryId}`);
+  }, [navigate]);
 
   const handleImageNavigation = useCallback((direction: 'prev' | 'next') => {
     if (direction === 'prev') {
@@ -284,7 +304,7 @@ const ProductDetailPage: React.FC = () => {
           {product.categories.length > 0 && (
             <>
               <button 
-                onClick={() => handleNavigateToCategory(String(product.categories[0].id))}
+                onClick={() => navigateToCategory(String(product.categories[0].id))}
                 className="hover:text-blue-500 transition-colors"
               >
                 {product.categories[0].name}
@@ -426,7 +446,7 @@ const ProductDetailPage: React.FC = () => {
             )}
 
             {/* Variantes */}
-            {product.type === 'VARIABLE' && product.variants.length > 0 && (
+            {product.type === 'VARIABLE' && product.variants && product.variants.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Variantes disponibles</h3>
                 <div className="grid grid-cols-1 gap-2">
@@ -472,7 +492,7 @@ const ProductDetailPage: React.FC = () => {
                   {product.categories.map((category) => (
                     <button
                       key={category.id}
-                      onClick={() => handleNavigateToCategory(String(category.id))}
+                      onClick={() => navigateToCategory(String(category.id))}
                       className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-800 text-sm rounded-full hover:bg-gray-200 transition-colors"
                     >
                       <Tag className="h-3 w-3 mr-1" />
@@ -484,11 +504,11 @@ const ProductDetailPage: React.FC = () => {
             )}
 
             {/* Atributos */}
-            {product.attributes.length > 0 && (
+            {product.attributes && product.attributes.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Características</h3>
                 <div className="grid grid-cols-1 gap-2">
-                  {product.attributes.map((attr, index) => (
+                  {product.attributes.map((attr: any, index: number) => (
                     <div key={index} className="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0">
                       <span className="text-gray-600">{attr.name}</span>
                       <span className="font-medium text-gray-900">{attr.value}</span>

@@ -52,7 +52,7 @@ export const API_CONFIG = {
   
   // Configuración de imágenes
   IMAGES: {
-    BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
+    BASE_URL: import.meta.env.VITE_API_URL?.replace(/\/api$/, '') || 'http://localhost:3000',
     UPLOADS_PATH: '/uploads',
     PRODUCTS_PATH: '/uploads/products',
     VARIANTS_PATH: '/uploads/variants',

@@ -189,14 +189,7 @@ const Header = ({ onCartClick, onChatbotClick }: HeaderProps) => {
           >
             Catálogo
           </Link>
-          <Link
-            to="/products"
-            className={`text-sm uppercase tracking-widest hover:text-accent transition-colors ${
-              scrolled ? 'text-charcoal' : 'text-white'
-            }`}
-          >
-            Productos
-          </Link>
+          
         </nav>
         
         <div className="flex items-center space-x-6">

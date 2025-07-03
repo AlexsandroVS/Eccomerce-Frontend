@@ -186,14 +186,7 @@ const Navbar = ({ onCartClick, onSearchClick }: NavbarProps) => {
 
           {/* Acciones */}
           <div className="flex items-center space-x-4">
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={onSearchClick}
-              className="text-charcoal hover:text-accent transition-colors"
-            >
-              <Search size={20} />
-            </motion.button>
+            
 
             <motion.button
               whileHover={{ scale: 1.1 }}

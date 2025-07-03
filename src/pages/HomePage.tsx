@@ -21,7 +21,6 @@ const HomePage = () => {
       <main>
         <Hero />
         <Collections />
-        <Products />
         <Process />
         <Inspiration />
         <Newsletter />

@@ -126,18 +126,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               <Users size={20} className="mr-3" />
               Usuarios
             </Link>
-
-            <Link
-              to="/admin/settings"
-              className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                isActiveLink('/admin/settings')
-                  ? 'bg-accent/10 text-accent'
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              <Settings size={20} className="mr-3" />
-              Configuración
-            </Link>
           </nav>
 
           {/* Botón de logout */}

@@ -1,49 +1,112 @@
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send } from 'lucide-react';
+import React, { useState, useRef, useEffect } from "react";
+import { sendMessageToChatbot } from "../../../utils/chatbotApi";
+
+interface Message {
+  sender: "user" | "bot";
+  text: string;
+}
 
 interface ChatbotProps {
-  isOpen: boolean;
   onClose: () => void;
 }
 
-const Chatbot = ({ isOpen, onClose }: ChatbotProps) => {
+const sessionId = "demo-session-1";
+
+const Chatbot: React.FC<ChatbotProps> = ({ onClose }) => {
+  const [messages, setMessages] = useState<Message[]>([
+    { sender: "bot", text: "¡Hola! ¿En qué puedo ayudarte? Ejemplo: '¿tienes sillas para oficina?'" },
+  ]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const handleSend = async () => {
+    if (!input.trim()) return;
+    const userMessage = input;
+    setMessages((msgs) => [...msgs, { sender: "user", text: userMessage }]);
+    setInput("");
+    setLoading(true);
+    try {
+      const res = await sendMessageToChatbot(userMessage, sessionId);
+      setMessages((msgs) => [
+        ...msgs,
+        { sender: "bot", text: res.message || res.response || "Sin respuesta" }
+      ]);
+    } catch (e) {
+      setMessages((msgs) => [...msgs, { sender: "bot", text: "Error al conectar con el asistente." }]);
+    }
+    setLoading(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") handleSend();
+  };
+
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.3 }}
-          className="fixed bottom-24 right-8 w-80 bg-white rounded-lg shadow-xl overflow-hidden z-50"
-        >
-          <div className="bg-charcoal text-white px-4 py-3 flex justify-between items-center">
-            <h4 className="font-medium">¿Necesitas ayuda?</h4>
-            <button 
-              onClick={onClose}
-              className="text-white hover:text-sand transition-colors"
-            >
-              <X className="text-xl" />
-            </button>
-          </div>
-          <div className="h-60 overflow-y-auto p-4">
-            <div className="bg-cream rounded-lg p-3 mb-3 max-w-[80%]">
-              <p className="text-sm">¡Hola! Soy tu asistente de NOVA LIVING. ¿En qué puedo ayudarte hoy?</p>
+    <div
+      style={{
+        position: "fixed",
+        bottom: "5rem",
+        right: "2rem",
+        width: 350,
+        maxWidth: "90vw",
+        background: "#fff",
+        borderRadius: 16,
+        boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+        zIndex: 1100,
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+      }}
+    >
+      <div style={{ padding: "1rem", borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontWeight: 600 }}>Asistente</span>
+        <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer" }}>×</button>
+      </div>
+      <div style={{ flex: 1, padding: "1rem", overflowY: "auto", height: 300 }}>
+        {messages.map((msg, idx) => (
+          <div key={idx} style={{
+            display: "flex",
+            justifyContent: msg.sender === "user" ? "flex-end" : "flex-start",
+            marginBottom: 8,
+          }}>
+            <div style={{
+              background: msg.sender === "user" ? "#4f46e5" : "#f3f4f6",
+              color: msg.sender === "user" ? "#fff" : "#222",
+              borderRadius: 12,
+              padding: "8px 14px",
+              maxWidth: "80%",
+              fontSize: 15,
+            }}>
+              {msg.text}
             </div>
           </div>
-          <div className="border-t border-gray-200 p-3 flex">
-            <input 
-              type="text" 
-              placeholder="Escribe tu mensaje..." 
-              className="flex-grow px-3 py-2 border border-gray-300 rounded-l focus:outline-none focus:ring-1 focus:ring-sand text-sm" 
-            />
-            <button className="bg-sand text-charcoal px-4 py-2 rounded-r">
-              <Send className="w-4 h-4" />
-            </button>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        ))}
+        <div ref={messagesEndRef} />
+      </div>
+      <div style={{ display: "flex", borderTop: "1px solid #eee", padding: "0.5rem" }}>
+        <input
+          type="text"
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Escribe tu pregunta..."
+          style={{ flex: 1, border: "none", outline: "none", fontSize: 15, padding: "8px", borderRadius: 8, background: "#f3f4f6" }}
+          disabled={loading}
+        />
+        <button
+          onClick={handleSend}
+          disabled={loading}
+          style={{ marginLeft: 8, background: "#4f46e5", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontWeight: 600, cursor: "pointer" }}
+        >
+          {loading ? "..." : "Enviar"}
+        </button>
+      </div>
+    </div>
   );
 };
 
